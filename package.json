@@ -1,6 +1,10 @@
 {
-  "name": "with-typescript",
+  "name": "order-book",
   "version": "1.0.0",
+  "engines": {
+    "node": "14.16.1",
+    "yarn": "1.22.5"
+  },
   "scripts": {
     "dev": "next",
     "build": "next build",
@@ -10,7 +14,8 @@
   "dependencies": {
     "next": "latest",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "websocket": "^1.0.34"
   },
   "devDependencies": {
     "@types/node": "^12.12.21",

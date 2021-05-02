@@ -1,6 +1,6 @@
-# TypeScript Next.js example
+# TypeScript Next.js XBT order book
 
-This is a really simple project that shows the usage of Next.js with TypeScript.
+A simple project to create an order book
 
 ## Deploy your own
 
