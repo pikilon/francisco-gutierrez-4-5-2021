@@ -1,4 +1,9 @@
-import React, { FunctionComponent, useEffect, useState } from "react";
+import React, {
+  FunctionComponent,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import Layout from "../components/Layout";
 import { OrderbookItem } from "../components/OrderbookItem";
 const W3CWebSocket = require("websocket").w3cwebsocket;
@@ -39,16 +44,18 @@ const IndexPage: FunctionComponent<Props> = ({ initialAsks, initialBids }) => {
   const [asksMap, setAsksMap] = useState(setInitialMaps(initialAsks));
   const [bidsMap, setBidsMap] = useState(setInitialMaps(initialBids));
 
-  const updateAskBid = (isBid: Boolean) => (askBid: TAskBid) => {
-    const mapToUpdate = isBid ? bidsMap : asksMap;
-    const update = isBid ? setBidsMap : setAsksMap;
+  const updateAskBid = useCallback(
+    (isBid: Boolean) => async (askBid: TAskBid) => {
+      const mapToUpdate = isBid ? bidsMap : asksMap;
+      const update = isBid ? setBidsMap : setAsksMap;
 
-    const resultMap = new Map(setAskBidToMap(askBid, mapToUpdate));
-    update(resultMap);
-  };
+      const resultMap = new Map(setAskBidToMap(askBid, mapToUpdate));
+      update(resultMap);
+    },
+    []
+  );
   useEffect(() => {
     const socket = new WebSocket(FEED);
-    let count = 0;
 
     socket.onopen = () => {
       socket.send(getSubscriptionParams());
@@ -65,8 +72,6 @@ const IndexPage: FunctionComponent<Props> = ({ initialAsks, initialBids }) => {
       if (bids) {
         (bids as TAskBid[]).forEach(updateAskBid(true));
       }
-      count++;
-      if (count === 85) socket.send(getSubscriptionParams(true));
     };
 
     return () => {
@@ -127,4 +132,7 @@ export async function getStaticProps() {
   });
 
   return { props, revalidate: PRERENDER_MAX_SECONDS };
+}
+function useCallBack(arg0: (isBid: Boolean) => (askBid: TAskBid) => void) {
+  throw new Error("Function not implemented.");
 }
