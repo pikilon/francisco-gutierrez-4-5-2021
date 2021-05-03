@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { OrderbookItem } from "../components/OrderbookItem";
+const W3CWebSocket = require("websocket").w3cwebsocket;
 
+const FEED = "wss://www.cryptofacilities.com/ws/v1";
 const FEED_ID = "book_ui_1";
+const PRERENDER_MAX_SECONDS = 2;
 
 const getSubscriptionParams = (unsubscribe = false) =>
   JSON.stringify({
@@ -11,40 +14,50 @@ const getSubscriptionParams = (unsubscribe = false) =>
     product_ids: ["PI_XBTUSD"],
   });
 
-type TAsksBids = [number, number];
+type TAskBid = [number, number];
 
 type TAskBidTotal = { price: number; size: number };
 
-type TOrderBookDictionary = { [price: string]: TAskBidTotal };
-
-// Sets states in a non-blocking way
-const getBidAskObject = (data: TAsksBids) => {
-  const [price, size] = data;
-  return { price, size, total: 0 };
+const setAskBidToMap = (
+  askBid: TAskBid,
+  targetMap: Map<number, TAskBidTotal>
+) => {
+  const [price, size] = askBid;
+  if (size === 0) {
+    targetMap.delete(price);
+  } else {
+    targetMap.set(price, { price, size });
+  }
+  return targetMap;
 };
 
-const IndexPage = () => {
-  const [asksMap, setAsksMap] = useState<Map<number, TAskBidTotal>>(new Map());
-  const [bidsMap, setBidsMap] = useState<Map<number, TAskBidTotal>>(new Map());
+const setInitialMaps = (asksBids: TAskBid[]) => {
+  const result: Map<number, TAskBidTotal> = new Map();
+  asksBids.forEach((askBid) => setAskBidToMap(askBid, result));
+  return result;
+};
 
-  const updateAskBid = (isBid: Boolean) => (askBid: TAsksBids) => {
-    const mapToUpdate = isBid ? bidsMap : asksMap; 
-    const update = isBid ? setBidsMap : setAsksMap; 
-    const [price, size] = askBid;
+interface Props {
+  initialAsks: TAskBid[];
+  initialBids: TAskBid[];
+}
 
-    if (size === 0) {
-      mapToUpdate.delete(price);
-    } else {
-      mapToUpdate.set(price, { price, size });
-    }
-    const resultMap = new Map(mapToUpdate);
-    update(resultMap)
+const IndexPage: FunctionComponent<Props> = ({ initialAsks, initialBids }) => {
+  const [asksMap, setAsksMap] = useState(setInitialMaps(initialAsks));
+  const [bidsMap, setBidsMap] = useState(setInitialMaps(initialBids));
+
+  const updateAskBid = (isBid: Boolean) => (askBid: TAskBid) => {
+    const mapToUpdate = isBid ? bidsMap : asksMap;
+    const update = isBid ? setBidsMap : setAsksMap;
+
+    const resultMap = new Map(setAskBidToMap(askBid, mapToUpdate));
+    update(resultMap);
   };
   useEffect(() => {
-    const socket = new WebSocket("wss://www.cryptofacilities.com/ws/v1");
+    const socket = new WebSocket(FEED);
     let count = 0;
 
-    socket.onopen = (evt) => {
+    socket.onopen = () => {
       socket.send(getSubscriptionParams());
     };
 
@@ -53,11 +66,11 @@ const IndexPage = () => {
       const { asks, bids } = data;
 
       if (asks) {
-        (asks as TAsksBids[]).forEach(updateAskBid(false));
+        (asks as TAskBid[]).forEach(updateAskBid(false));
       }
 
       if (bids) {
-        (bids as TAsksBids[]).forEach(updateAskBid(true));
+        (bids as TAskBid[]).forEach(updateAskBid(true));
       }
       count++;
       if (count === 85) socket.send(getSubscriptionParams(true));
@@ -70,7 +83,6 @@ const IndexPage = () => {
   }, []);
 
   let totalBids = 0;
-  
 
   return (
     <Layout title="Home | Next.js + TypeScript Example">
@@ -98,3 +110,28 @@ const IndexPage = () => {
 };
 
 export default IndexPage;
+
+export async function getStaticProps() {
+  const props = await new Promise((resolve) => {
+    const result: Props = { initialAsks: [], initialBids: [] };
+    const socket = new W3CWebSocket(FEED);
+    socket.onopen = () => {
+      socket.send(getSubscriptionParams());
+    };
+    socket.onmessage = (msg: { data: string }) => {
+      const data = JSON.parse(msg.data);
+      const { asks, bids, feed } = data;
+
+      if (feed === "book_ui_1_snapshot") {
+        result.initialAsks = asks;
+        result.initialBids = bids;
+
+        socket.send(getSubscriptionParams(true));
+        socket.close();
+        resolve(result);
+      }
+    };
+  });
+
+  return { props, revalidate: PRERENDER_MAX_SECONDS };
+}
