@@ -14,14 +14,7 @@ const getSubscriptionParams = (unsubscribe = false) =>
     product_ids: ["PI_XBTUSD"],
   });
 
-type TAskBid = [number, number];
-
-type TAskBidTotal = { price: number; size: number };
-
-const setAskBidToMap = (
-  askBid: TAskBid,
-  targetMap: Map<number, TAskBidTotal>
-) => {
+const setAskBidToMap = (askBid: TAskBid, targetMap: TAsksBidsMap) => {
   const [price, size] = askBid;
   if (size === 0) {
     targetMap.delete(price);
@@ -32,7 +25,7 @@ const setAskBidToMap = (
 };
 
 const setInitialMaps = (asksBids: TAskBid[]) => {
-  const result: Map<number, TAskBidTotal> = new Map();
+  const result: TAsksBidsMap = new Map();
   asksBids.forEach((askBid) => setAskBidToMap(askBid, result));
   return result;
 };
