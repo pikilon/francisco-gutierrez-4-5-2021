@@ -1,9 +1,9 @@
 {
   "name": "order-book",
   "version": "1.0.0",
-  "engines": {
-    "node": "14.16.1",
-    "yarn": "1.22.5"
+  "engines": { 
+    "node": "14.x",
+    "yarn": "1.22.10"
   },
   "scripts": {
     "dev": "next",
