@@ -96,6 +96,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
       socket.onmessage = async (msg) => {
         const data = JSON.parse(msg.data);
         const { asks, bids } = data;
+        socket.send(getSubscriptionParams(true));
 
         if (asks) {
           updateAskBids(asks as TAskBid[], false);

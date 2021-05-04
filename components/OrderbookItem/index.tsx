@@ -29,7 +29,7 @@ const OrderbookItemNotMemoized: FunctionComponent<Props> = ({
 }) => {
   const color = isBid ? "#7F1D1D" : "#047857";
   return (
-    <tr style={generateBackground(total, maxTotal, color)}>
+    <tr data-testid="row" style={generateBackground(total, maxTotal, color)}>
       <td className="p-3 text-center">{price.toLocaleString()}</td>
       <td className="p-3 text-center">{size.toLocaleString()}</td>
       <td className="p-3 text-center">{total.toLocaleString()}</td>
