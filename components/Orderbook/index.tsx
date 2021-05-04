@@ -31,11 +31,14 @@ const setAsksBidsToMap = (
 export interface IOrderBookProps {
   initialAsks: TAskBid[];
   initialBids: TAskBid[];
+  doNotFetch?: boolean;
 }
 
 export const Orderbook: FunctionComponent<IOrderBookProps> = ({
   initialAsks,
   initialBids,
+  // I didn't have much time, I set this for testing (I could mock it with more time)
+  doNotFetch,
 }) => {
   const [connectionError, setConnectionError] = useState(false);
   const [asksMap, setAsksMap] = useState(setAsksBidsToMap(initialAsks));
@@ -86,6 +89,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
     []
   );
   useEffect(() => {
+    if (doNotFetch) return;
     let socket: WebSocket;
     try {
       socket = new WebSocket(FEED);
@@ -96,7 +100,6 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
       socket.onmessage = async (msg) => {
         const data = JSON.parse(msg.data);
         const { asks, bids } = data;
-        socket.send(getSubscriptionParams(true));
 
         if (asks) {
           updateAskBids(asks as TAskBid[], false);
@@ -131,6 +134,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
         <label>
           <h3 className="text-xl">Limit results</h3>
           <input
+            data-testid="limit-input"
             type="number"
             step="5"
             min="5"
@@ -143,13 +147,18 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
         <div className="ml-4 flex items-center content-center justify-around">
           <button
             disabled={groupStep === 0}
+            data-testid="group-decrease"
             onClick={handleGroupStep(false)}
             className="disabled:opacity-50 focus:outline-none bg-red-400 w-4 h-4 p-4 text-xl font-bold tracking-wider text-white rounded-full hover:bg-red-900 inline-flex items-center justify-center"
           >
             -
           </button>
-          <div className="mx-2">Grouped by {GROUP_INTERVALS[groupStep]}</div>
+          <div className="mx-2">
+            Grouped by{" "}
+            <span data-testid="group-value">{GROUP_INTERVALS[groupStep]}</span>
+          </div>
           <button
+            data-testid="group-increase"
             disabled={groupStep === GROUP_INTERVALS.length - 1}
             onClick={handleGroupStep(true)}
             className="disabled:opacity-50 focus:outline-none bg-green-500 w-4 h-4 p-4 text-xl font-bold tracking-wider text-white rounded-full hover:bg-green-600 inline-flex items-center justify-center"
@@ -159,7 +168,10 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
         </div>
       </div>
       <div className="flex flex-col text-sm sm:flex-row sm:items-stretch sm:justify-center">
-        <section className="bg-gray-700 text-gray-100">
+        <section
+          className="bg-gray-700 text-gray-100"
+          data-testid="bids-column"
+        >
           <h1 className="text-2xl text-center capitalize p-4">Bids</h1>
           <OrderbookList
             limit={limit}
@@ -168,7 +180,10 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
             groupStep={GROUP_INTERVALS[debouncedGroupStep]}
           />
         </section>
-        <section className="mt-4 sm:mt-0 sm:ml-4 bg-gray-700 text-gray-100">
+        <section
+          className="mt-4 sm:mt-0 sm:ml-4 bg-gray-700 text-gray-100"
+          data-testid="asks-column"
+        >
           <h1 className="text-2xl text-center capitalize p-4">Asks</h1>
           <OrderbookList
             limit={limit}
