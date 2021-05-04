@@ -12,7 +12,8 @@
     "type-check": "tsc",
     "test:typing": "tsc",
     "test:unit": "jest",
-    "test:unit:watch": "jest --watchAll"
+    "test:unit:watch": "jest --watchAll",
+    "serve-production": "yarn build && yarn start"
   },
   "dependencies": {
     "next": "latest",
