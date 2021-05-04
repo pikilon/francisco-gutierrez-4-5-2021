@@ -5,14 +5,16 @@ interface Props {
   type: "bids" | "asks";
   items: TAsksBidsMap;
   groupStep: number;
+  limit: number;
 }
 
 export const OrderbookList: FunctionComponent<Props> = ({
   type,
   items,
+  limit,
   groupStep = 0.5,
 }) => {
-  const { total, orderedItems } = useMemo(() => {
+  const { total, ascSorted } = useMemo(() => {
     let total = 0;
     const ascSorted = Array.from(items.values())
       .sort((a, b) => a.price - b.price)
@@ -20,33 +22,37 @@ export const OrderbookList: FunctionComponent<Props> = ({
         total = total + item.price;
         return { ...item, total };
       });
+
     return {
       total,
-      orderedItems: type === "bids" ? ascSorted.reverse() : ascSorted,
+      ascSorted,
     };
-  }, [type, items, groupStep]);
+  }, [type, items]);
+
+  const limitedItems = useMemo(() => {
+    const limited = ascSorted.slice(limit * -1);
+    return type === "bids" ? limited.reverse() : limited;
+  }, [limit, ascSorted, type]);
 
   return (
-    <section className="bg-gray-700 text-gray-100 text-sm ">
-      <h1 className="text-2xl text-center capitalize p-4">{type}</h1>
-      <table className="table-auto">
-        <thead>
-          <tr>
-            <th>Price</th>
-            <th>Size</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orderedItems.map((item) => (
-            <OrderbookItem
-              key={item.price}
-              {...item}
-              maxTotal={total}
-            />
-          ))}
-        </tbody>
-      </table>
-    </section>
+    <table className="table-auto w-full">
+      <thead>
+        <tr>
+          <th>Price</th>
+          <th>Size</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {limitedItems.map((item) => (
+          <OrderbookItem
+            key={item.price}
+            isBid={type === "bids"}
+            {...item}
+            maxTotal={total}
+          />
+        ))}
+      </tbody>
+    </table>
   );
 };

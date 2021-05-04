@@ -5,6 +5,7 @@ interface Props {
   size: number;
   total: number;
   maxTotal: number;
+  isBid: boolean;
 }
 
 const generateBackground = (
@@ -24,9 +25,11 @@ const OrderbookItemNotMemoized: FunctionComponent<Props> = ({
   size,
   total,
   maxTotal,
+  isBid,
 }) => {
+  const color = isBid ? "#7F1D1D" : "#047857";
   return (
-    <tr style={generateBackground(total, maxTotal, "red")}>
+    <tr style={generateBackground(total, maxTotal, color)}>
       <td className="p-3">{price.toLocaleString()}</td>
       <td className="p-3">{size.toLocaleString()}</td>
       <td className="p-3">{total.toLocaleString()}</td>
