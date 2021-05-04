@@ -3,6 +3,12 @@
 
 type TAskBid = [number, number];
 
-type TAskBidTotal = { price: number; size: number };
+interface IAskBidObject {
+  price: number;
+  size: number;
+}
+interface IAskBidTotalObject extends IAskBidObject {
+  total: number;
+}
 
-type TAsksBidsMap = Map<number, TAskBidTotal>
+type TAsksBidsMap = Map<number, IAskBidObject>;

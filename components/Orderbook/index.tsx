@@ -6,7 +6,9 @@ import {
   useState,
 } from "react";
 import { FEED, getSubscriptionParams } from "../../lib/orderbook";
-import { OrderbookList } from "../OrderbookList";
+import { OrderbookList, GROUP_INTERVALS } from "../OrderbookList";
+
+const GROUP_DEBOUNCE_MILLISECONDS = 500;
 
 const setAskBidToMap = (askBid: TAskBid, targetMap: TAsksBidsMap) => {
   const [price, size] = askBid;
@@ -37,8 +39,31 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
 }) => {
   const [asksMap, setAsksMap] = useState(setAsksBidsToMap(initialAsks));
   const [bidsMap, setBidsMap] = useState(setAsksBidsToMap(initialBids));
-  const [groupStep] = useState(0.5);
+  const [groupStep, setGroupStep] = useState(0);
+  const [debouncedGroupStep, setDebouncedGroupStep] = useState(groupStep);
   const [limit, setLimit] = useState(10);
+
+  const handleGroupStep = useCallback(
+    (increase: boolean) => () => {
+      let increment = increase ? groupStep + 1 : groupStep - 1;
+      if (increment < 0) increment = 0;
+      if (increment > GROUP_INTERVALS.length - 1)
+        increment = GROUP_INTERVALS.length - 1;
+
+      setGroupStep(increment);
+    },
+    [groupStep]
+  );
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedGroupStep(groupStep);
+    }, GROUP_DEBOUNCE_MILLISECONDS);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [groupStep]);
 
   const handleLimitChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +113,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
   return (
     <div className="container mx-auto">
       <h1 className="text-3xl text-center">Orderbook Francisco</h1>
-      <div className="mb-4 flex flex-col text-sm sm:flex-row sm:justify-center">
+      <div className="my-4 flex flex-col text-sm sm:flex-row sm:justify-center">
         <label>
           <h3 className="text-xl">Limit results</h3>
           <input
@@ -101,6 +126,23 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
             className="p-3 border-2 rounded-lg"
           />
         </label>
+        <div className="ml-4 flex items-center content-center justify-around">
+          <button
+            disabled={groupStep === 0}
+            onClick={handleGroupStep(false)}
+            className="disabled:opacity-50 focus:outline-none bg-red-400 w-4 h-4 p-4 text-xl font-bold tracking-wider text-white rounded-full hover:bg-red-900 inline-flex items-center justify-center"
+          >
+            -
+          </button>
+          <div className="mx-2">Grouped by {GROUP_INTERVALS[groupStep]}</div>
+          <button
+            disabled={groupStep === GROUP_INTERVALS.length - 1}
+            onClick={handleGroupStep(true)}
+            className="disabled:opacity-50 focus:outline-none bg-green-500 w-4 h-4 p-4 text-xl font-bold tracking-wider text-white rounded-full hover:bg-green-600 inline-flex items-center justify-center"
+          >
+            +
+          </button>
+        </div>
       </div>
       <div className="flex flex-col text-sm sm:flex-row sm:items-stretch sm:justify-center">
         <section className="bg-gray-700 text-gray-100">
@@ -109,7 +151,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
             limit={limit}
             type="bids"
             items={bidsMap}
-            groupStep={groupStep}
+            groupStep={GROUP_INTERVALS[debouncedGroupStep]}
           />
         </section>
         <section className="mt-4 sm:mt-0 sm:ml-4 bg-gray-700 text-gray-100">
@@ -118,7 +160,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
             limit={limit}
             type="asks"
             items={asksMap}
-            groupStep={groupStep}
+            groupStep={GROUP_INTERVALS[debouncedGroupStep]}
           />
         </section>
       </div>
