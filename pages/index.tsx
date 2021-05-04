@@ -19,23 +19,29 @@ export default IndexPage;
 export async function getStaticProps() {
   const props = await new Promise((resolve) => {
     const result: IOrderBookProps = { initialAsks: [], initialBids: [] };
-    const socket = new W3CWebSocket(FEED);
-    socket.onopen = () => {
-      socket.send(getSubscriptionParams());
-    };
-    socket.onmessage = (msg: { data: string }) => {
-      const data = JSON.parse(msg.data);
-      const { asks, bids, feed } = data;
+    try {
+      const socket = new W3CWebSocket(FEED);
 
-      if (feed === "book_ui_1_snapshot") {
-        result.initialAsks = asks;
-        result.initialBids = bids;
+      socket.onopen = () => {
+        socket.send(getSubscriptionParams());
+      };
+      socket.onmessage = (msg: { data: string }) => {
+        const data = JSON.parse(msg.data);
+        const { asks, bids, feed } = data;
 
-        socket.send(getSubscriptionParams(true));
-        socket.close();
-        resolve(result);
-      }
-    };
+        if (feed === "book_ui_1_snapshot") {
+          result.initialAsks = asks;
+          result.initialBids = bids;
+
+          socket.send(getSubscriptionParams(true));
+          socket.close();
+          resolve(result);
+        }
+      };
+    } catch (error) {
+      console.log("error fetching feed for orderbook");
+      resolve(result);
+    }
   });
 
   return { props, revalidate: PRERENDER_MAX_SECONDS };

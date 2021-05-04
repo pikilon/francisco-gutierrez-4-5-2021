@@ -76,7 +76,9 @@ export const OrderbookList: FunctionComponent<Props> = ({
     return type === "bids" ? limited.reverse() : limited;
   }, [limit, groupedItems, type]);
 
-  const maxTotal = groupedItems[groupedItems.length - 1].total;
+  const lastItem = groupedItems[groupedItems.length - 1];
+  const maxTotal = lastItem ? lastItem.total : 0;
+
   return (
     <table className="table-fixed w-full">
       <thead>

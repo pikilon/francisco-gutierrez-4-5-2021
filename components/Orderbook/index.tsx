@@ -37,6 +37,7 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
   initialAsks,
   initialBids,
 }) => {
+  const [connectionError, setConnectionError] = useState(false);
   const [asksMap, setAsksMap] = useState(setAsksBidsToMap(initialAsks));
   const [bidsMap, setBidsMap] = useState(setAsksBidsToMap(initialBids));
   const [groupStep, setGroupStep] = useState(0);
@@ -85,34 +86,46 @@ export const Orderbook: FunctionComponent<IOrderBookProps> = ({
     []
   );
   useEffect(() => {
-    const socket = new WebSocket(FEED);
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(FEED);
+      socket.onopen = () => {
+        socket.send(getSubscriptionParams());
+      };
 
-    socket.onopen = () => {
-      socket.send(getSubscriptionParams());
-    };
+      socket.onmessage = async (msg) => {
+        const data = JSON.parse(msg.data);
+        const { asks, bids } = data;
 
-    socket.onmessage = async (msg) => {
-      const data = JSON.parse(msg.data);
-      const { asks, bids } = data;
+        if (asks) {
+          updateAskBids(asks as TAskBid[], false);
+        }
 
-      if (asks) {
-        updateAskBids(asks as TAskBid[], false);
-      }
-
-      if (bids) {
-        updateAskBids(bids as TAskBid[], true);
-      }
-    };
+        if (bids) {
+          updateAskBids(bids as TAskBid[], true);
+        }
+        setConnectionError(false);
+      };
+    } catch (error) {
+      setConnectionError(true);
+    }
 
     return () => {
-      socket.send(getSubscriptionParams(true));
-      socket.close();
+      if (socket) {
+        socket.send(getSubscriptionParams(true));
+        socket.close();
+      }
     };
   }, []);
 
   return (
     <div className="container mx-auto">
       <h1 className="text-3xl text-center">Orderbook Francisco</h1>
+      {connectionError && (
+        <div className="text-center bg-red-100 p-4 my-2 border-2 border-red-900 text-red-900">
+          We are having connection problems
+        </div>
+      )}
       <div className="my-4 flex flex-col text-sm sm:flex-row sm:justify-center">
         <label>
           <h3 className="text-xl">Limit results</h3>
